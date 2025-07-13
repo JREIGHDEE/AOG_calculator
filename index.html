@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clinical Gestational Age Tracker (Century Gothic Theme)</title>
+    <title>Clinical Gestational Age Tracker (Final Version)</title>
     <!-- SheetJS library for Excel export/import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
-            /* Contemporary Dark Blue & White Theme */
+            /* Theme Colors */
             --primary-color: #0A2342; /* Deep Navy Blue */
-            --primary-hover-color: #103562; /* Darker Navy */
-            --accent-color: #2ca5d8; /* Bright Blue for Info */
+            --primary-hover-color: #103562;
+            --accent-color: #2ca5d8;
             --accent-hover-color: #2487b0;
-            --background-color: #F0F4F8; /* Light Blue-Gray Background */
+            --background-color: #F0F4F8;
             --card-bg-color: #ffffff;
             --border-color: #DDE4ED;
             --text-color: #212529;
@@ -24,11 +24,11 @@
             --success-color: #198754;
             --warning-color: #ffc107;
             --danger-color: #dc3545;
+            --danger-hover-color: #bb2d3b;
 
             /* UI Properties */
             --card-shadow: 0 8px 24px rgba(10, 35, 66, 0.1);
             --border-radius: 12px;
-            /* FONT UPDATE: "Century Gothic" is now the primary font. */
             --font-family: "Century Gothic", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
@@ -51,7 +51,13 @@
             max-width: 800px;
             display: flex;
             gap: 25px;
-            flex-wrap: wrap;
+            flex-direction: column; /* Stack on mobile */
+        }
+        
+        @media (min-width: 768px) {
+            .main-container {
+                flex-direction: row; /* Side-by-side on desktop */
+            }
         }
 
         .calculator-container, .summary-container {
@@ -61,16 +67,12 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            width: 100%;
         }
         
-        .calculator-container {
-            flex: 2;
-            min-width: 320px;
-        }
-
-        .summary-container {
-            flex: 1;
-            min-width: 280px;
+        @media (min-width: 768px) {
+            .calculator-container { flex: 2; }
+            .summary-container { flex: 1; }
         }
 
         .container-header {
@@ -80,77 +82,30 @@
             text-align: center;
         }
 
-        .container-header h2 {
-            margin: 0;
-            font-size: 1.5em;
-            font-weight: 600;
-        }
-
-        .container-body {
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        fieldset {
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        legend {
-            font-weight: 500;
-            padding: 0 10px;
-            color: var(--light-text-color);
-        }
+        .container-header h2 { margin: 0; font-size: 1.5em; font-weight: 600; }
+        .container-body { padding: 25px; display: flex; flex-direction: column; gap: 20px; }
+        fieldset { border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; }
+        legend { font-weight: 500; padding: 0 10px; color: var(--light-text-color); }
 
         .input-group { display: flex; flex-direction: column; gap: 8px; }
-        .name-group { display: flex; gap: 15px; }
+        .name-group { display: flex; flex-direction: column; gap: 15px; }
+        @media (min-width: 480px) { .name-group { flex-direction: row; } }
         .name-group .input-group { flex: 1; }
 
         .input-group input, .input-group select {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 1em;
-            font-family: var(--font-family);
-            background-color: #fff;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;
+            font-size: 1em; font-family: var(--font-family); background-color: #fff; transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         .input-group input:focus, .input-group select:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(10, 35, 66, 0.15);
+            outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(10, 35, 66, 0.15);
         }
-        
-        .input-group input:read-only {
-            background-color: var(--disabled-color);
-            cursor: not-allowed;
-            border-color: var(--border-color);
-        }
+        .input-group input:read-only { background-color: var(--disabled-color); cursor: not-allowed; border-color: var(--border-color); }
 
-        .button-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
+        .button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .button {
-            padding: 12px;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s ease-in-out;
-            font-family: var(--font-family);
+            padding: 12px; color: #fff; border: none; border-radius: 8px; font-size: 1em; font-weight: 600; cursor: pointer;
+            text-align: center; transition: all 0.2s ease-in-out; font-family: var(--font-family);
         }
         
         #action-button { background-color: var(--primary-color); }
@@ -163,40 +118,44 @@
         .button.info { background-color: var(--accent-color); color: white; }
         .button.info:hover { background-color: var(--accent-hover-color); }
         .button.danger { background-color: var(--danger-color); }
-        .button.danger:hover { background-color: #bb2d3b; }
+        .button.danger:hover { background-color: var(--danger-hover-color); }
         .button:disabled { background-color: var(--secondary-color); opacity: 0.65; cursor: not-allowed; }
         
         #error-message { color: var(--danger-color); font-size: 0.9em; min-height: 1.2em; text-align: center; margin-top: 5px; }
 
         .summary-list { list-style: none; padding: 0; margin: 0; }
-        .summary-item { padding: 18px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .summary-item { 
+            padding: 18px 25px; border-bottom: 1px solid var(--border-color); display: flex;
+            justify-content: space-between; align-items: center; gap: 10px;
+        }
         .summary-item:last-child { border-bottom: none; }
-        .summary-item-label { font-weight: 600; color: var(--text-color); }
-        .summary-item-value { font-weight: 400; color: var(--light-text-color); text-align: right; }
+        .summary-item-label { font-weight: 600; color: var(--text-color); flex-shrink: 0; }
+        .summary-item-value { font-weight: 400; color: var(--light-text-color); text-align: right; flex-grow: 1; }
         .summary-item-value .gestation { font-weight: 700; color: var(--primary-color); }
+        
+        .delete-btn {
+            background-color: var(--danger-color); color: white; border: none; border-radius: 50%; width: 28px; height: 28px;
+            font-weight: bold; font-size: 16px; cursor: pointer; display: flex; justify-content: center; align-items: center;
+            line-height: 1; transition: background-color 0.2s; flex-shrink: 0;
+        }
+        .delete-btn:hover { background-color: var(--danger-hover-color); }
     </style>
 </head>
 <body>
 
 <div class="main-container">
     <div class="calculator-container">
-        <div class="container-header">
-            <h2>Gestational Tracker</h2>
-        </div>
+        <div class="container-header"><h2>Gestational Tracker</h2></div>
         <div class="container-body">
-            <fieldset>
-                <legend>Patient Information</legend>
+            <fieldset><legend>Patient Information</legend>
                 <div class="name-group">
                     <div class="input-group"><label for="firstName">First Name</label><input type="text" id="firstName" placeholder="Julianna"></div>
                     <div class="input-group"><label for="lastName">Last Name</label><input type="text" id="lastName" placeholder="Denolan"></div>
                 </div>
             </fieldset>
-
-            <fieldset id="visit-editor-fieldset">
-                <legend>Visit Editor</legend>
+            <fieldset id="visit-editor-fieldset"><legend>Visit Editor</legend>
                 <div class="input-group" style="margin-bottom: 20px;">
-                    <label for="visit-selector">Select Visit to Edit or Add New</label>
-                    <select id="visit-selector" onchange="handleVisitSelection()"></select>
+                    <label for="visit-selector">Select Visit to Edit or Add New</label><select id="visit-selector" onchange="handleVisitSelection()"></select>
                 </div>
                 <div class="input-group" style="margin-bottom: 20px;">
                     <label for="visitDate">Date of Visit</label><input type="date" id="visitDate">
@@ -205,10 +164,8 @@
                     <label for="lmpDate">First Day of Last Menstruation (LMP)</label><input type="date" id="lmpDate">
                 </div>
             </fieldset>
-
             <button class="button" id="action-button" style="width: 100%; padding: 15px; font-size: 1.1em;" onclick="handleSubmit()">+ Add Visit</button>
             <div id="error-message"></div>
-
             <div class="button-group">
                 <button class="button info" onclick="document.getElementById('file-importer').click()">Import Excel</button>
                 <input type="file" id="file-importer" style="display:none;" accept=".xlsx, .xls" onchange="importData(event)">
@@ -217,7 +174,6 @@
             </div>
         </div>
     </div>
-
     <div class="summary-container">
          <div class="container-header"><h2>Patient Summary</h2></div>
          <div class="container-body" style="padding: 0;"><ul class="summary-list" id="summary-list"></ul></div>
@@ -225,8 +181,6 @@
 </div>
 
 <script>
-    // THE JAVASCRIPT LOGIC IS IDENTICAL TO THE PREVIOUS VERSION AND REMAINS UNCHANGED.
-    // The only change is in the CSS <style> block above.
     let patientData = { firstName: '', lastName: '', visits: [] };
     let currentlyEditingIndex = null;
 
@@ -239,7 +193,6 @@
         const visitDate = new Date(visitDateStr + 'T00:00:00');
         const lmpDate = new Date(lmpDateStr + 'T00:00:00');
         if (lmpDate.getTime() > visitDate.getTime()) return null;
-
         const diffTime = visitDate.getTime() - lmpDate.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         const weeks = Math.floor(diffDays / 7);
@@ -260,7 +213,7 @@
         patientData.visits.forEach((visit, index) => {
             const option = document.createElement('option');
             option.value = index;
-            option.textContent = `Visit ${index + 1}: ${visit.visitDate} (AOG: ${visit.ageOfGestation})`;
+            option.textContent = `Visit ${index + 1}: ${visit.visitDate}`;
             visitSelector.appendChild(option);
         });
         
@@ -283,8 +236,19 @@
             const visit = patientData.visits[i];
             const li = document.createElement('li');
             li.className = 'summary-item';
-            const valueHTML = visit ? `<span class="date">${visit.visitDate}</span><br><span class="gestation">${visit.ageOfGestation}</span>` : 'N/A';
-            li.innerHTML = `<span class="summary-item-label">${i + 1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'} Visit</span><span class="summary-item-value">${valueHTML}</span>`;
+            
+            let valueHTML = visit ? `
+                <span class="date">${visit.visitDate}</span><br>
+                <span class="gestation">${visit.ageOfGestation}</span>` 
+                : 'N/A';
+                
+            let deleteButtonHTML = visit ? `<button class="delete-btn" onclick="deleteVisit(${i})">×</button>` : '';
+
+            li.innerHTML = `
+                <span class="summary-item-label">${i + 1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'} Visit</span>
+                <span class="summary-item-value">${valueHTML}</span>
+                ${deleteButtonHTML}
+            `;
             summaryList.appendChild(li);
         }
         
@@ -294,22 +258,33 @@
     function handleVisitSelection() {
         const selector = document.getElementById('visit-selector');
         const selectedIndex = parseInt(selector.value, 10);
+        currentlyEditingIndex = (selectedIndex === -1) ? null : selectedIndex;
 
-        if (selectedIndex === -1) {
-            currentlyEditingIndex = null;
-        } else {
-            currentlyEditingIndex = selectedIndex;
-            const visit = patientData.visits[selectedIndex];
+        if (currentlyEditingIndex !== null) {
+            const visit = patientData.visits[currentlyEditingIndex];
             document.getElementById('visitDate').value = visit.visitDate;
             document.getElementById('lmpDate').value = visit.lmpDate;
         }
         updateUI();
     }
+    
+    function deleteVisit(index) {
+        if (confirm(`Are you sure you want to delete Visit ${index + 1}?`)) {
+            patientData.visits.splice(index, 1);
+            
+            // If we deleted the visit we were editing, switch back to 'Add New' mode
+            if (currentlyEditingIndex === index) {
+                currentlyEditingIndex = null;
+            }
+            
+            saveDataToLocalStorage();
+            updateUI();
+        }
+    }
 
     function handleSubmit() {
         const errorDiv = document.getElementById('error-message');
         errorDiv.textContent = '';
-
         const firstName = document.getElementById('firstName').value.trim();
         const lastName = document.getElementById('lastName').value.trim();
         const visitDateStr = document.getElementById('visitDate').value;
@@ -318,46 +293,35 @@
         if (!firstName || !lastName || !visitDateStr || !lmpDateStr) {
             errorDiv.textContent = 'Please fill out all patient and visit fields.'; return;
         }
-
         const newAOG = calculateAOG(lmpDateStr, visitDateStr);
         if (newAOG === null) {
             errorDiv.textContent = 'LMP date cannot be after the visit date.'; return;
         }
-
         patientData.firstName = firstName;
         patientData.lastName = lastName;
-
-        if (currentlyEditingIndex !== null) { // Update Mode
+        if (currentlyEditingIndex !== null) {
             const originalLmp = patientData.visits[currentlyEditingIndex].lmpDate;
             patientData.visits[currentlyEditingIndex].visitDate = visitDateStr;
             patientData.visits[currentlyEditingIndex].lmpDate = lmpDateStr;
-            
-            if (lmpDateStr !== originalLmp) { // LMP changed, recalculate all visits
-                patientData.visits.forEach(visit => {
-                    visit.lmpDate = lmpDateStr;
-                    visit.ageOfGestation = calculateAOG(lmpDateStr, visit.visitDate);
+            if (lmpDateStr !== originalLmp) {
+                patientData.visits.forEach(v => {
+                    v.lmpDate = lmpDateStr;
+                    v.ageOfGestation = calculateAOG(lmpDateStr, v.visitDate);
                 });
-            } else { // Only visit date changed
+            } else {
                  patientData.visits[currentlyEditingIndex].ageOfGestation = newAOG;
             }
-        } else { // Add Mode
+        } else {
              patientData.visits.push({ visitDate: visitDateStr, lmpDate: lmpDateStr, ageOfGestation: newAOG });
         }
-        
         patientData.visits.sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate));
         currentlyEditingIndex = null;
         saveDataToLocalStorage();
         updateUI();
     }
     
-    function saveDataToLocalStorage() {
-        localStorage.setItem('gestationTrackerData', JSON.stringify(patientData));
-    }
-
-    function loadDataFromLocalStorage() {
-        const savedData = localStorage.getItem('gestationTrackerData');
-        if (savedData) patientData = JSON.parse(savedData);
-    }
+    function saveDataToLocalStorage() { localStorage.setItem('gestationTrackerData', JSON.stringify(patientData)); }
+    function loadDataFromLocalStorage() { const d = localStorage.getItem('gestationTrackerData'); if (d) patientData = JSON.parse(d); }
     
     function clearData() {
         if (confirm('Are you sure? This will clear all data and start a new patient record.')) {
@@ -373,10 +337,7 @@
         if (!patientData.visits.length) return;
         const headers = ["First Name", "Last Name", "LMP Date"];
         const dataRow = [patientData.firstName, patientData.lastName, patientData.visits[0].lmpDate];
-        patientData.visits.forEach((v, i) => {
-            headers.push(`Visit ${i + 1} Date`, `Visit ${i + 1} AOG`);
-            dataRow.push(v.visitDate, v.ageOfGestation);
-        });
+        patientData.visits.forEach((v, i) => { headers.push(`Visit ${i + 1} Date`, `Visit ${i + 1} AOG`); dataRow.push(v.visitDate, v.ageOfGestation); });
         const ws = XLSX.utils.aoa_to_sheet([headers, dataRow]);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Patient Record");
@@ -394,36 +355,25 @@
                 const ws = workbook.Sheets[workbook.SheetNames[0]];
                 const [headers, dataRow] = XLSX.utils.sheet_to_json(ws, { header: 1 });
                 if (!dataRow || dataRow.length < 3) throw new Error("Invalid data row.");
-                
                 const importedData = { firstName: dataRow[0], lastName: dataRow[1], visits: [] };
                 const lmpDate = new Date(dataRow[2]);
                 lmpDate.setMinutes(lmpDate.getMinutes() + lmpDate.getTimezoneOffset());
                 const lmpDateStr = lmpDate.toISOString().split('T')[0];
-
                 for (let i = 3; i < dataRow.length; i += 2) {
                     if (dataRow[i] && dataRow[i+1]) {
                         const visitDate = new Date(dataRow[i]);
                         visitDate.setMinutes(visitDate.getMinutes() + visitDate.getTimezoneOffset());
-                        importedData.visits.push({
-                            visitDate: visitDate.toISOString().split('T')[0],
-                            lmpDate: lmpDateStr,
-                            ageOfGestation: dataRow[i+1]
-                        });
+                        importedData.visits.push({ visitDate: visitDate.toISOString().split('T')[0], lmpDate: lmpDateStr, ageOfGestation: dataRow[i+1] });
                     }
                 }
-
                 if (confirm('Importing this file will overwrite current data. Continue?')) {
                     patientData = importedData;
                     currentlyEditingIndex = null;
                     saveDataToLocalStorage();
                     updateUI();
                 }
-            } catch (err) {
-                console.error(err);
-                alert('Error: Could not import file. Ensure it is a valid record file from this tool.');
-            } finally {
-                document.getElementById('file-importer').value = '';
-            }
+            } catch (err) { console.error(err); alert('Error: Could not import file.'); } 
+            finally { document.getElementById('file-importer').value = ''; }
         };
         reader.readAsBinaryString(file);
     }
