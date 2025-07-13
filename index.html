@@ -224,8 +224,8 @@
             actionButton.classList.add('update-mode');
         } else {
             visitSelector.value = "-1";
-            document.getElementById('visitDate').valueAsDate = new Date(); // Clears visit date to today
-            document.getElementById('lmpDate').value = hasVisits ? patientData.visits[0].lmpDate : ''; // Sets correct LMP
+            document.getElementById('visitDate').valueAsDate = new Date();
+            document.getElementById('lmpDate').value = hasVisits ? patientData.visits[0].lmpDate : '';
             actionButton.textContent = '+ Add New Visit';
             actionButton.classList.remove('update-mode');
         }
@@ -237,7 +237,11 @@
             const li = document.createElement('li');
             li.className = 'summary-item';
             
-            let valueHTML = visit ? `<span class="date">${visit.visitDate}</span><br><span class="gestation">${visit.ageOfGestation}</span>` : 'N/A';
+            let valueHTML = visit ? `
+                <span class="date">${visit.visitDate}</span><br>
+                <span class="gestation">${visit.ageOfGestation}</span>` 
+                : 'N/A';
+                
             let deleteButtonHTML = visit ? `<button class="delete-btn" onclick="deleteVisit(${i})">×</button>` : '';
 
             li.innerHTML = `
@@ -267,7 +271,12 @@
     function deleteVisit(index) {
         if (confirm(`Are you sure you want to delete Visit ${index + 1}?`)) {
             patientData.visits.splice(index, 1);
-            if (currentlyEditingIndex === index) currentlyEditingIndex = null;
+            
+            // If we deleted the visit we were editing, switch back to 'Add New' mode
+            if (currentlyEditingIndex === index) {
+                currentlyEditingIndex = null;
+            }
+            
             saveDataToLocalStorage();
             updateUI();
         }
