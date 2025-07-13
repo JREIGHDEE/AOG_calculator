@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clinical Gestational Age Tracker with Excel I/O</title>
+    <title>Clinical Gestational Age Tracker with Full Editing</title>
     <!-- SheetJS library for Excel export/import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -14,7 +14,8 @@
             --success-color: #198754;
             --danger-color: #dc3545;
             --info-color: #0dcaf0;
-            --info-hover-color: #0aa5c2;
+            --warning-color: #ffc107;
+            --warning-hover-color: #d39e00;
             --background-color: #f4f7fa;
             --card-bg-color: #ffffff;
             --border-color: #dee2e6;
@@ -86,6 +87,18 @@
             gap: 20px;
         }
 
+        fieldset {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        legend {
+            font-weight: 600;
+            padding: 0 10px;
+            color: var(--text-color);
+        }
+
         .input-group { display: flex; flex-direction: column; }
         .name-group { display: flex; gap: 15px; }
         .name-group .input-group { flex: 1; }
@@ -96,7 +109,7 @@
             color: var(--light-text-color);
         }
 
-        .input-group input {
+        .input-group input, .input-group select {
             padding: 12px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -105,7 +118,7 @@
             transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
         }
 
-        .input-group input:focus {
+        .input-group input:focus, .input-group select:focus {
             outline: none;
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
@@ -132,43 +145,26 @@
             font-weight: 500;
             cursor: pointer;
             text-align: center;
-            transition: background-color 0.2s ease-in-out, opacity 0.2s;
+            transition: all 0.2s ease-in-out;
         }
         
+        #action-button.update-mode { background-color: var(--warning-color); color: black; }
+        #action-button.update-mode:hover { background-color: var(--warning-hover-color); }
+
         .button.primary { background-color: var(--primary-color); }
         .button.primary:hover { background-color: var(--primary-hover-color); }
-        
         .button.success { background-color: var(--success-color); }
         .button.success:hover { background-color: #157347; }
-        
-        .button.info { background-color: var(--info-color); }
-        .button.info:hover { background-color: var(--info-hover-color); }
-
+        .button.info { background-color: var(--info-color); color: black; }
+        .button.info:hover { background-color: #0aa5c2; }
         .button.danger { background-color: var(--danger-color); }
         .button.danger:hover { background-color: #bb2d3b; }
-
-        .button:disabled {
-            background-color: var(--secondary-color);
-            opacity: 0.65;
-            cursor: not-allowed;
-        }
+        .button:disabled { background-color: var(--secondary-color); opacity: 0.65; cursor: not-allowed; }
         
-        #error-message {
-            color: var(--danger-color);
-            font-size: 0.9em;
-            min-height: 1.2em;
-            text-align: center;
-            margin-top: 5px;
-        }
+        #error-message { color: var(--danger-color); font-size: 0.9em; min-height: 1.2em; text-align: center; margin-top: 5px; }
 
         .summary-list { list-style: none; padding: 0; margin: 0; }
-        .summary-item {
-            padding: 15px 25px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .summary-item { padding: 15px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .summary-item:last-child { border-bottom: none; }
         .summary-item-label { font-weight: 600; color: var(--text-color); }
         .summary-item-value { font-weight: 400; color: var(--light-text-color); text-align: right; }
@@ -184,82 +180,100 @@
         </div>
         <div class="container-body">
             <fieldset>
-                <legend style="font-weight: 600; margin-bottom: 10px; color: var(--text-color);">Patient Information</legend>
+                <legend>Patient Information</legend>
                 <div class="name-group">
-                    <div class="input-group">
-                        <label for="firstName">First Name</label>
-                        <input type="text" id="firstName" placeholder="Julianna">
-                    </div>
-                    <div class="input-group">
-                        <label for="lastName">Last Name</label>
-                        <input type="text" id="lastName" placeholder="Denolan">
-                    </div>
+                    <div class="input-group"><label for="firstName">First Name</label><input type="text" id="firstName" placeholder="Julianna"></div>
+                    <div class="input-group"><label for="lastName">Last Name</label><input type="text" id="lastName" placeholder="Denolan"></div>
                 </div>
             </fieldset>
 
-            <fieldset>
-                <legend style="font-weight: 600; margin-bottom: 10px; color: var(--text-color);">Add New Visit</legend>
+            <fieldset id="visit-editor-fieldset">
+                <legend>Visit Editor</legend>
                 <div class="input-group" style="margin-bottom: 20px;">
-                    <label for="visitDate">Date of Visit</label>
-                    <input type="date" id="visitDate">
+                    <label for="visit-selector">Select Visit to Edit or Add New</label>
+                    <select id="visit-selector" onchange="handleVisitSelection()"></select>
+                </div>
+                <div class="input-group" style="margin-bottom: 20px;">
+                    <label for="visitDate">Date of Visit</label><input type="date" id="visitDate">
                 </div>
                 <div class="input-group">
-                    <label for="lmpDate">First Day of Last Menstruation (LMP)</label>
-                    <input type="date" id="lmpDate">
+                    <label for="lmpDate">First Day of Last Menstruation (LMP)</label><input type="date" id="lmpDate">
                 </div>
             </fieldset>
 
-            <button class="button primary" style="width: 100%; padding: 15px; font-size: 1.1em;" onclick="addVisit()">+ Add Visit</button>
-             <div id="error-message"></div>
+            <button class="button primary" id="action-button" style="width: 100%; padding: 15px; font-size: 1.1em;" onclick="handleSubmit()">+ Add Visit</button>
+            <div id="error-message"></div>
 
             <div class="button-group">
-                <button class="button info" onclick="document.getElementById('file-importer').click()">Import from Excel</button>
+                <button class="button info" onclick="document.getElementById('file-importer').click()">Import Excel</button>
                 <input type="file" id="file-importer" style="display:none;" accept=".xlsx, .xls" onchange="importData(event)">
-                <button class="button success" id="export-button" onclick="exportData()">Export to Excel</button>
+                <button class="button success" id="export-button" onclick="exportData()">Export Excel</button>
                 <button class="button danger" onclick="clearData()" style="grid-column: 1 / -1;">New Patient / Clear All</button>
             </div>
         </div>
     </div>
 
     <div class="summary-container">
-         <div class="container-header">
-            <h2>Patient Summary</h2>
-        </div>
-        <div class="container-body" style="padding: 0;">
-             <ul class="summary-list" id="summary-list">
-                <!-- Items will be generated by JavaScript -->
-             </ul>
-        </div>
+         <div class="container-header"><h2>Patient Summary</h2></div>
+         <div class="container-body" style="padding: 0;"><ul class="summary-list" id="summary-list"></ul></div>
     </div>
 </div>
 
 <script>
-    let patientData = {
-        firstName: '',
-        lastName: '',
-        visits: []
-    };
+    let patientData = { firstName: '', lastName: '', visits: [] };
+    let currentlyEditingIndex = null;
 
     document.addEventListener('DOMContentLoaded', () => {
         loadDataFromLocalStorage();
         updateUI();
     });
+    
+    function calculateAOG(lmpDateStr, visitDateStr) {
+        const visitDate = new Date(visitDateStr + 'T00:00:00');
+        const lmpDate = new Date(lmpDateStr + 'T00:00:00');
+        if (lmpDate.getTime() > visitDate.getTime()) return null;
+
+        const diffTime = visitDate.getTime() - lmpDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const weeks = Math.floor(diffDays / 7);
+        const days = diffDays % 7;
+        return `${weeks} ${days}/7`;
+    }
 
     function updateUI() {
         const hasVisits = patientData.visits.length > 0;
-        const { firstName, lastName } = document.getElementById('firstName').value = patientData.firstName;
-        document.getElementById('lastName').value = patientData.lastName;
         
+        document.getElementById('firstName').value = patientData.firstName;
+        document.getElementById('lastName').value = patientData.lastName;
         document.getElementById('firstName').readOnly = hasVisits;
         document.getElementById('lastName').readOnly = hasVisits;
-        document.getElementById('lmpDate').readOnly = hasVisits;
-        
-        document.getElementById('visitDate').valueAsDate = new Date();
-        document.getElementById('lmpDate').value = hasVisits ? patientData.visits[0].lmpDate : '';
 
+        const visitSelector = document.getElementById('visit-selector');
+        visitSelector.innerHTML = '<option value="-1">-- Add New Visit --</option>';
+        patientData.visits.forEach((visit, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = `Visit ${index + 1}: ${visit.visitDate} (AOG: ${visit.ageOfGestation})`;
+            visitSelector.appendChild(option);
+        });
+        
+        const actionButton = document.getElementById('action-button');
+        if (currentlyEditingIndex !== null) {
+            visitSelector.value = currentlyEditingIndex;
+            actionButton.textContent = 'Update Selected Visit';
+            actionButton.classList.add('update-mode');
+        } else {
+            visitSelector.value = "-1";
+            document.getElementById('visitDate').valueAsDate = new Date();
+            document.getElementById('lmpDate').value = hasVisits ? patientData.visits[0].lmpDate : '';
+            actionButton.textContent = '+ Add New Visit';
+            actionButton.classList.remove('update-mode');
+        }
+
+        document.getElementById('visit-editor-fieldset').style.display = 'block';
+        
         const summaryList = document.getElementById('summary-list');
         summaryList.innerHTML = '';
-        
         for (let i = 0; i < 4; i++) {
             const visit = patientData.visits[i];
             const li = document.createElement('li');
@@ -272,7 +286,22 @@
         document.getElementById('export-button').disabled = !hasVisits;
     }
 
-    function addVisit() {
+    function handleVisitSelection() {
+        const selector = document.getElementById('visit-selector');
+        const selectedIndex = parseInt(selector.value, 10);
+
+        if (selectedIndex === -1) {
+            currentlyEditingIndex = null;
+        } else {
+            currentlyEditingIndex = selectedIndex;
+            const visit = patientData.visits[selectedIndex];
+            document.getElementById('visitDate').value = visit.visitDate;
+            document.getElementById('lmpDate').value = visit.lmpDate;
+        }
+        updateUI();
+    }
+
+    function handleSubmit() {
         const errorDiv = document.getElementById('error-message');
         errorDiv.textContent = '';
 
@@ -285,24 +314,33 @@
             errorDiv.textContent = 'Please fill out all patient and visit fields.'; return;
         }
 
-        const visitDate = new Date(visitDateStr + 'T00:00:00');
-        const lmpDate = new Date(lmpDateStr + 'T00:00:00');
-
-        if (lmpDate.getTime() > visitDate.getTime()) {
+        const newAOG = calculateAOG(lmpDateStr, visitDateStr);
+        if (newAOG === null) {
             errorDiv.textContent = 'LMP date cannot be after the visit date.'; return;
         }
 
-        const diffTime = visitDate.getTime() - lmpDate.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        const weeks = Math.floor(diffDays / 7);
-        const days = diffDays % 7;
-        const ageOfGestation = `${weeks} ${days}/7`;
-
         patientData.firstName = firstName;
         patientData.lastName = lastName;
-        patientData.visits.push({ visitDate: visitDateStr, lmpDate: lmpDateStr, ageOfGestation: ageOfGestation });
-        patientData.visits.sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate));
 
+        if (currentlyEditingIndex !== null) { // Update Mode
+            const originalLmp = patientData.visits[currentlyEditingIndex].lmpDate;
+            patientData.visits[currentlyEditingIndex].visitDate = visitDateStr;
+            patientData.visits[currentlyEditingIndex].lmpDate = lmpDateStr;
+            
+            if (lmpDateStr !== originalLmp) { // LMP changed, recalculate all visits
+                patientData.visits.forEach(visit => {
+                    visit.lmpDate = lmpDateStr;
+                    visit.ageOfGestation = calculateAOG(lmpDateStr, visit.visitDate);
+                });
+            } else { // Only visit date changed
+                 patientData.visits[currentlyEditingIndex].ageOfGestation = newAOG;
+            }
+        } else { // Add Mode
+             patientData.visits.push({ visitDate: visitDateStr, lmpDate: lmpDateStr, ageOfGestation: newAOG });
+        }
+        
+        patientData.visits.sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate));
+        currentlyEditingIndex = null;
         saveDataToLocalStorage();
         updateUI();
     }
@@ -317,8 +355,9 @@
     }
     
     function clearData() {
-        if (confirm('Are you sure you want to clear all data and start a new patient record?')) {
+        if (confirm('Are you sure? This will clear all data and start a new patient record.')) {
             patientData = { firstName: '', lastName: '', visits: [] };
+            currentlyEditingIndex = null;
             localStorage.removeItem('gestationTrackerData');
             updateUI();
             document.getElementById('error-message').textContent = '';
@@ -326,16 +365,13 @@
     }
 
     function exportData() {
-        if (patientData.visits.length === 0) return;
-        
+        if (!patientData.visits.length) return;
         const headers = ["First Name", "Last Name", "LMP Date"];
         const dataRow = [patientData.firstName, patientData.lastName, patientData.visits[0].lmpDate];
-        
-        patientData.visits.forEach((visit, index) => {
-            headers.push(`Visit ${index + 1} Date`, `Visit ${index + 1} AOG`);
-            dataRow.push(visit.visitDate, visit.ageOfGestation);
+        patientData.visits.forEach((v, i) => {
+            headers.push(`Visit ${i + 1} Date`, `Visit ${i + 1} AOG`);
+            dataRow.push(v.visitDate, v.ageOfGestation);
         });
-
         const ws = XLSX.utils.aoa_to_sheet([headers, dataRow]);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Patient Record");
@@ -346,34 +382,25 @@
     function importData(event) {
         const file = event.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
                 const workbook = XLSX.read(e.target.result, { type: 'binary', cellDates: true });
                 const ws = workbook.Sheets[workbook.SheetNames[0]];
                 const [headers, dataRow] = XLSX.utils.sheet_to_json(ws, { header: 1 });
-
-                if (!dataRow || dataRow.length < 3) throw new Error("Invalid or empty data row.");
+                if (!dataRow || dataRow.length < 3) throw new Error("Invalid data row.");
                 
-                const importedPatientData = {
-                    firstName: dataRow[0],
-                    lastName: dataRow[1],
-                    visits: []
-                };
-
+                const importedData = { firstName: dataRow[0], lastName: dataRow[1], visits: [] };
                 const lmpDate = new Date(dataRow[2]);
-                // Adjust for timezone offset and format to YYYY-MM-DD
                 lmpDate.setMinutes(lmpDate.getMinutes() + lmpDate.getTimezoneOffset());
                 const lmpDateStr = lmpDate.toISOString().split('T')[0];
 
                 for (let i = 3; i < dataRow.length; i += 2) {
-                    if(dataRow[i] && dataRow[i+1]) {
+                    if (dataRow[i] && dataRow[i+1]) {
                         const visitDate = new Date(dataRow[i]);
                         visitDate.setMinutes(visitDate.getMinutes() + visitDate.getTimezoneOffset());
-                        const visitDateStr = visitDate.toISOString().split('T')[0];
-                        importedPatientData.visits.push({
-                            visitDate: visitDateStr,
+                        importedData.visits.push({
+                            visitDate: visitDate.toISOString().split('T')[0],
                             lmpDate: lmpDateStr,
                             ageOfGestation: dataRow[i+1]
                         });
@@ -381,13 +408,14 @@
                 }
 
                 if (confirm('Importing this file will overwrite current data. Continue?')) {
-                    patientData = importedPatientData;
+                    patientData = importedData;
+                    currentlyEditingIndex = null;
                     saveDataToLocalStorage();
                     updateUI();
                 }
-            } catch (error) {
-                console.error(error);
-                alert('Error: Could not import file. Please ensure it is a valid record file created by this tool.');
+            } catch (err) {
+                console.error(err);
+                alert('Error: Could not import file. Ensure it is a valid record file from this tool.');
             } finally {
                 document.getElementById('file-importer').value = '';
             }
@@ -396,4 +424,4 @@
     }
 </script>
 </body>
-</html>```
+</html>
