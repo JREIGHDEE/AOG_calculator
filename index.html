@@ -3,60 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clinical Age of Gestation Calculator</title>
+    <title>Clinical Gestational Age Tracker</title>
     <style>
         :root {
-            --primary-color: #007bff;
-            --primary-hover-color: #0056b3;
-            --secondary-color: #f8f9fa;
+            --primary-color: #0d6efd;
+            --primary-hover-color: #0b5ed7;
+            --secondary-color: #6c757d;
+            --background-color: #f4f7fa;
+            --card-bg-color: #ffffff;
             --border-color: #dee2e6;
             --text-color: #212529;
-            --light-text-color: #6c757d;
-            --background-color: #e9ecef;
-            --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --light-text-color: #495057;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: var(--font-family);
             background-color: var(--background-color);
             color: var(--text-color);
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
 
-        .calculator-container {
+        .main-container {
             width: 100%;
-            max-width: 400px;
-            background-color: #fff;
+            max-width: 800px;
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+
+        .calculator-container, .summary-container {
+            background-color: var(--card-bg-color);
             border-radius: 12px;
             box-shadow: var(--card-shadow);
             overflow: hidden;
             display: flex;
             flex-direction: column;
         }
+        
+        .calculator-container {
+            flex: 2;
+            min-width: 320px;
+        }
 
-        .calculator-header {
+        .summary-container {
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .container-header {
             background-color: var(--primary-color);
             color: white;
             padding: 20px;
             text-align: center;
         }
 
-        .calculator-header h2 {
+        .container-header h2 {
             margin: 0;
             font-size: 1.5em;
             font-weight: 600;
         }
 
-        .calculator-body {
+        .container-body {
             padding: 25px;
             display: flex;
             flex-direction: column;
@@ -67,6 +83,15 @@
             display: flex;
             flex-direction: column;
         }
+        
+        .name-group {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .name-group .input-group {
+            flex: 1;
+        }
 
         .input-group label {
             margin-bottom: 8px;
@@ -74,124 +99,339 @@
             color: var(--light-text-color);
         }
 
-        .input-group input[type="date"] {
+        .input-group input {
             padding: 12px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
             font-size: 1em;
-            font-family: 'Inter', sans-serif;
+            font-family: var(--font-family);
             transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        .input-group input[type="date"]:focus {
+        .input-group input:focus {
             outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
         }
 
-        .calculate-button {
-            padding: 15px;
-            background-color: var(--primary-color);
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .button {
+            padding: 12px;
             color: #fff;
             border: none;
             border-radius: 8px;
-            font-size: 1.1em;
+            font-size: 0.95em;
             font-weight: 500;
             cursor: pointer;
-            transition: background-color 0.2s ease-in-out;
-        }
-
-        .calculate-button:hover, .calculate-button:focus {
-            background-color: var(--primary-hover-color);
-        }
-
-        .result-container {
-            background-color: var(--secondary-color);
             text-align: center;
-            padding: 20px;
-            border-top: 1px solid var(--border-color);
+            transition: background-color 0.2s ease-in-out, opacity 0.2s;
         }
         
-        #result-output {
-            font-size: 2em;
-            font-weight: 600;
-            color: var(--primary-color);
-            min-height: 48px; /* Prevents layout shift */
-            line-height: 48px;
+        .button.primary { background-color: var(--primary-color); }
+        .button.primary:hover { background-color: var(--primary-hover-color); }
+        
+        .button.secondary { background-color: var(--secondary-color); color: white; }
+        .button.secondary:hover { background-color: #5a6268; }
+        
+        .button.success { background-color: #198754; }
+        .button.success:hover { background-color: #157347; }
+
+        .button.danger { background-color: #dc3545; }
+        .button.danger:hover { background-color: #bb2d3b; }
+
+        .button:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
         }
         
         #error-message {
             color: #dc3545;
             font-size: 0.9em;
             min-height: 1.2em;
-            margin-top: 10px;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        /* Summary Panel */
+        .summary-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .summary-item {
+            padding: 15px 25px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-item-label {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .summary-item-value {
+            font-weight: 400;
+            color: var(--light-text-color);
+            text-align: right;
+        }
+
+        .summary-item-value .gestation {
+            font-weight: 600;
+            color: var(--primary-color);
         }
 
     </style>
 </head>
 <body>
 
-<div class="calculator-container">
-    <div class="calculator-header">
-        <h2>Age of Gestation</h2>
-    </div>
-    <div class="calculator-body">
-        <div class="input-group">
-            <label for="visitDate">Date Today / Visit</label>
-            <input type="date" id="visitDate">
+<div class="main-container">
+    <div class="calculator-container">
+        <div class="container-header">
+            <h2>Gestational Tracker</h2>
         </div>
-        <div class="input-group">
-            <label for="lmpDate">First Day of Last Menstruation</label>
-            <input type="date" id="lmpDate">
+        <div class="container-body">
+            <fieldset>
+                <legend style="font-weight: 600; margin-bottom: 10px; color: var(--text-color);">Patient Information</legend>
+                <div class="name-group">
+                    <div class="input-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" placeholder="Jane">
+                    </div>
+                    <div class="input-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" placeholder="Doe">
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend style="font-weight: 600; margin-bottom: 10px; color: var(--text-color);">Add New Visit</legend>
+                <div class="input-group" style="margin-bottom: 20px;">
+                    <label for="visitDate">Date of Visit</label>
+                    <input type="date" id="visitDate">
+                </div>
+                <div class="input-group">
+                    <label for="lmpDate">First Day of Last Menstruation (LMP)</label>
+                    <input type="date" id="lmpDate">
+                </div>
+            </fieldset>
+
+            <button class="button primary" style="width: 100%; padding: 15px; font-size: 1.1em;" onclick="addVisit()">+ Add Visit</button>
+             <div id="error-message"></div>
+
+            <div class="button-group">
+                <button class="button success" onclick="document.getElementById('file-importer').click()">Import Data</button>
+                <input type="file" id="file-importer" style="display:none;" accept=".json" onchange="importData(event)">
+                <button class="button secondary" id="export-button" onclick="exportData()">Export Data</button>
+                <button class="button danger" onclick="clearData()" style="grid-column: 1 / -1;">New Patient / Clear All</button>
+            </div>
         </div>
-        <button class="calculate-button" onclick="calculateGestation()">Calculate</button>
     </div>
-    <div class="result-container">
-        <div id="result-output">=</div>
-        <div id="error-message"></div>
+
+    <div class="summary-container">
+         <div class="container-header">
+            <h2>Patient Summary</h2>
+        </div>
+        <div class="container-body" style="padding: 0;">
+             <ul class="summary-list" id="summary-list">
+                <!-- Items will be generated by JavaScript -->
+             </ul>
+        </div>
     </div>
 </div>
 
 <script>
+    let patientData = {
+        firstName: '',
+        lastName: '',
+        visits: []
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
-        // Set the default visit date to today
-        document.getElementById('visitDate').valueAsDate = new Date();
+        loadDataFromLocalStorage();
+        updateUI();
     });
 
-    function calculateGestation() {
-        const visitDate = new Date(document.getElementById('visitDate').value);
-        const lmpDate = new Date(document.getElementById('lmpDate').value);
-        const resultDiv = document.getElementById('result-output');
+    function updateUI() {
+        // Update input fields
+        document.getElementById('firstName').value = patientData.firstName;
+        document.getElementById('lastName').value = patientData.lastName;
+        
+        // Set visit date to today
+        document.getElementById('visitDate').valueAsDate = new Date();
+
+        // If there's at least one visit, use its LMP date and make the input read-only
+        if (patientData.visits.length > 0) {
+            document.getElementById('lmpDate').value = patientData.visits[0].lmpDate;
+            document.getElementById('lmpDate').readOnly = true;
+        } else {
+            document.getElementById('lmpDate').value = '';
+            document.getElementById('lmpDate').readOnly = false;
+        }
+
+        // Update the summary panel
+        const summaryList = document.getElementById('summary-list');
+        summaryList.innerHTML = ''; // Clear previous items
+        
+        for (let i = 0; i < 4; i++) {
+            const visit = patientData.visits[i];
+            const li = document.createElement('li');
+            li.className = 'summary-item';
+            
+            let valueHTML;
+            if (visit) {
+                valueHTML = `
+                    <span class="date">${visit.visitDate}</span><br>
+                    <span class="gestation">${visit.ageOfGestation}</span>`;
+            } else {
+                valueHTML = 'N/A';
+            }
+
+            li.innerHTML = `
+                <span class="summary-item-label">${i + 1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'} Visit</span>
+                <span class="summary-item-value">${valueHTML}</span>
+            `;
+            summaryList.appendChild(li);
+        }
+
+        // Enable/disable export button
+        document.getElementById('export-button').disabled = patientData.visits.length === 0;
+    }
+
+    function addVisit() {
         const errorDiv = document.getElementById('error-message');
+        errorDiv.textContent = ''; // Clear previous errors
 
-        // Clear previous results and errors
-        resultDiv.textContent = '=';
-        errorDiv.textContent = '';
+        // Get and validate inputs
+        const firstName = document.getElementById('firstName').value.trim();
+        const lastName = document.getElementById('lastName').value.trim();
+        const visitDateStr = document.getElementById('visitDate').value;
+        const lmpDateStr = document.getElementById('lmpDate').value;
 
-        if (!document.getElementById('lmpDate').value) {
-            errorDiv.textContent = "Please enter the first day of the last menstrual period.";
+        if (!firstName || !lastName) {
+            errorDiv.textContent = 'Please enter both first and last name.';
+            return;
+        }
+        if (!visitDateStr || !lmpDateStr) {
+            errorDiv.textContent = 'Please select both visit and LMP dates.';
             return;
         }
 
+        const visitDate = new Date(visitDateStr + 'T00:00:00');
+        const lmpDate = new Date(lmpDateStr + 'T00:00:00');
+
         if (lmpDate.getTime() > visitDate.getTime()) {
-            errorDiv.textContent = "The last menstrual period cannot be after the visit date.";
+            errorDiv.textContent = 'LMP date cannot be after the visit date.';
+            return;
+        }
+
+        // Calculate Age of Gestation
+        const diffTime = visitDate.getTime() - lmpDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const weeks = Math.floor(diffDays / 7);
+        const days = diffDays % 7;
+        const ageOfGestation = `${weeks} ${days}/7`;
+
+        // Update patient data object
+        patientData.firstName = firstName;
+        patientData.lastName = lastName;
+        patientData.visits.push({
+            visitDate: visitDateStr,
+            lmpDate: lmpDateStr,
+            ageOfGestation: ageOfGestation
+        });
+        
+        // Sort visits by date just in case
+        patientData.visits.sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate));
+
+        saveDataToLocalStorage();
+        updateUI();
+    }
+    
+    function saveDataToLocalStorage() {
+        localStorage.setItem('gestationTrackerData', JSON.stringify(patientData));
+    }
+
+    function loadDataFromLocalStorage() {
+        const savedData = localStorage.getItem('gestationTrackerData');
+        if (savedData) {
+            patientData = JSON.parse(savedData);
+        }
+    }
+    
+    function clearData() {
+        if (confirm('Are you sure you want to clear all data for this patient? This cannot be undone.')) {
+            patientData = { firstName: '', lastName: '', visits: [] };
+            localStorage.removeItem('gestationTrackerData');
+            updateUI();
+            document.getElementById('error-message').textContent = '';
+        }
+    }
+
+    function exportData() {
+        if (patientData.visits.length === 0) {
+            alert('No data to export.');
             return;
         }
         
-        // Calculate the difference in milliseconds
-        // Add one day to be inclusive of the start date in the count
-        const diffTime = visitDate.getTime() - lmpDate.getTime() + (1000 * 60 * 60 * 24);
-
-        // Calculate the difference in days
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-        // Calculate weeks and remaining days
-        const weeks = Math.floor(diffDays / 7);
-        const days = diffDays % 7;
-
-        resultDiv.textContent = `= ${weeks} ${days}/7`;
+        const dataStr = JSON.stringify(patientData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        const fileName = `${patientData.lastName}_${patientData.firstName}_record.json`;
+        link.download = fileName;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     }
-</script>
 
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedObj = JSON.parse(e.target.result);
+                // Basic validation
+                if (importedObj && 'firstName' in importedObj && 'lastName' in importedObj && Array.isArray(importedObj.visits)) {
+                    if (confirm('Importing this file will overwrite current data. Continue?')) {
+                        patientData = importedObj;
+                        saveDataToLocalStorage();
+                        updateUI();
+                    }
+                } else {
+                    throw new Error('Invalid file format.');
+                }
+            } catch (error) {
+                alert('Error: Could not import file. Please ensure it is a valid record file created by this tool.');
+            } finally {
+                // Reset file input to allow re-importing the same file
+                document.getElementById('file-importer').value = '';
+            }
+        };
+        reader.readAsText(file);
+    }
+
+</script>
 </body>
 </html>
