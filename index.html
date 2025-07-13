@@ -3,17 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clinical Gestational Age Tracker</title>
+    <title>Clinical Gestational Age Tracker with Excel Export</title>
+    <!-- SheetJS library for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary-color: #0d6efd;
             --primary-hover-color: #0b5ed7;
             --secondary-color: #6c757d;
+            --success-color: #198754;
+            --danger-color: #dc3545;
             --background-color: #f4f7fa;
             --card-bg-color: #ffffff;
             --border-color: #dee2e6;
             --text-color: #212529;
             --light-text-color: #495057;
+            --disabled-color: #e9ecef;
             --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
@@ -79,19 +84,9 @@
             gap: 20px;
         }
 
-        .input-group {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .name-group {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .name-group .input-group {
-            flex: 1;
-        }
+        .input-group { display: flex; flex-direction: column; }
+        .name-group { display: flex; gap: 15px; }
+        .name-group .input-group { flex: 1; }
 
         .input-group label {
             margin-bottom: 8px;
@@ -105,13 +100,18 @@
             border-radius: 8px;
             font-size: 1em;
             font-family: var(--font-family);
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
         }
 
         .input-group input:focus {
             outline: none;
             border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+        }
+        
+        .input-group input:read-only {
+            background-color: var(--disabled-color);
+            cursor: not-allowed;
         }
 
         .button-group {
@@ -126,7 +126,7 @@
             color: #fff;
             border: none;
             border-radius: 8px;
-            font-size: 0.95em;
+            font-size: 1em;
             font-weight: 500;
             cursor: pointer;
             text-align: center;
@@ -136,35 +136,27 @@
         .button.primary { background-color: var(--primary-color); }
         .button.primary:hover { background-color: var(--primary-hover-color); }
         
-        .button.secondary { background-color: var(--secondary-color); color: white; }
-        .button.secondary:hover { background-color: #5a6268; }
-        
-        .button.success { background-color: #198754; }
+        .button.success { background-color: var(--success-color); }
         .button.success:hover { background-color: #157347; }
-
-        .button.danger { background-color: #dc3545; }
+        
+        .button.danger { background-color: var(--danger-color); }
         .button.danger:hover { background-color: #bb2d3b; }
 
         .button:disabled {
+            background-color: var(--secondary-color);
             opacity: 0.65;
             cursor: not-allowed;
         }
         
         #error-message {
-            color: #dc3545;
+            color: var(--danger-color);
             font-size: 0.9em;
             min-height: 1.2em;
             text-align: center;
             margin-top: 5px;
         }
 
-        /* Summary Panel */
-        .summary-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
+        .summary-list { list-style: none; padding: 0; margin: 0; }
         .summary-item {
             padding: 15px 25px;
             border-bottom: 1px solid var(--border-color);
@@ -172,27 +164,10 @@
             justify-content: space-between;
             align-items: center;
         }
-
-        .summary-item:last-child {
-            border-bottom: none;
-        }
-
-        .summary-item-label {
-            font-weight: 600;
-            color: var(--text-color);
-        }
-        
-        .summary-item-value {
-            font-weight: 400;
-            color: var(--light-text-color);
-            text-align: right;
-        }
-
-        .summary-item-value .gestation {
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-
+        .summary-item:last-child { border-bottom: none; }
+        .summary-item-label { font-weight: 600; color: var(--text-color); }
+        .summary-item-value { font-weight: 400; color: var(--light-text-color); text-align: right; }
+        .summary-item-value .gestation { font-weight: 600; color: var(--primary-color); }
     </style>
 </head>
 <body>
@@ -208,11 +183,11 @@
                 <div class="name-group">
                     <div class="input-group">
                         <label for="firstName">First Name</label>
-                        <input type="text" id="firstName" placeholder="Jane">
+                        <input type="text" id="firstName" placeholder="Julianna">
                     </div>
                     <div class="input-group">
                         <label for="lastName">Last Name</label>
-                        <input type="text" id="lastName" placeholder="Doe">
+                        <input type="text" id="lastName" placeholder="Denolan">
                     </div>
                 </div>
             </fieldset>
@@ -233,10 +208,8 @@
              <div id="error-message"></div>
 
             <div class="button-group">
-                <button class="button success" onclick="document.getElementById('file-importer').click()">Import Data</button>
-                <input type="file" id="file-importer" style="display:none;" accept=".json" onchange="importData(event)">
-                <button class="button secondary" id="export-button" onclick="exportData()">Export Data</button>
-                <button class="button danger" onclick="clearData()" style="grid-column: 1 / -1;">New Patient / Clear All</button>
+                <button class="button success" id="export-button" onclick="exportData()">Export to Excel</button>
+                <button class="button danger" onclick="clearData()">New Patient / Clear All</button>
             </div>
         </div>
     </div>
@@ -266,39 +239,39 @@
     });
 
     function updateUI() {
-        // Update input fields
-        document.getElementById('firstName').value = patientData.firstName;
-        document.getElementById('lastName').value = patientData.lastName;
+        const hasVisits = patientData.visits.length > 0;
         
-        // Set visit date to today
-        document.getElementById('visitDate').valueAsDate = new Date();
+        const firstNameInput = document.getElementById('firstName');
+        const lastNameInput = document.getElementById('lastName');
+        const lmpDateInput = document.getElementById('lmpDate');
+        
+        firstNameInput.value = patientData.firstName;
+        lastNameInput.value = patientData.lastName;
 
-        // If there's at least one visit, use its LMP date and make the input read-only
-        if (patientData.visits.length > 0) {
-            document.getElementById('lmpDate').value = patientData.visits[0].lmpDate;
-            document.getElementById('lmpDate').readOnly = true;
+        // Lock name and LMP fields if a record is active
+        firstNameInput.readOnly = hasVisits;
+        lastNameInput.readOnly = hasVisits;
+        lmpDateInput.readOnly = hasVisits;
+
+        document.getElementById('visitDate').valueAsDate = new Date();
+        
+        if (hasVisits) {
+            lmpDateInput.value = patientData.visits[0].lmpDate;
         } else {
-            document.getElementById('lmpDate').value = '';
-            document.getElementById('lmpDate').readOnly = false;
+            lmpDateInput.value = '';
         }
 
-        // Update the summary panel
         const summaryList = document.getElementById('summary-list');
-        summaryList.innerHTML = ''; // Clear previous items
+        summaryList.innerHTML = '';
         
         for (let i = 0; i < 4; i++) {
             const visit = patientData.visits[i];
             const li = document.createElement('li');
             li.className = 'summary-item';
             
-            let valueHTML;
-            if (visit) {
-                valueHTML = `
-                    <span class="date">${visit.visitDate}</span><br>
-                    <span class="gestation">${visit.ageOfGestation}</span>`;
-            } else {
-                valueHTML = 'N/A';
-            }
+            let valueHTML = visit ? `
+                <span class="date">${visit.visitDate}</span><br>
+                <span class="gestation">${visit.ageOfGestation}</span>` : 'N/A';
 
             li.innerHTML = `
                 <span class="summary-item-label">${i + 1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'} Visit</span>
@@ -306,46 +279,39 @@
             `;
             summaryList.appendChild(li);
         }
-
-        // Enable/disable export button
-        document.getElementById('export-button').disabled = patientData.visits.length === 0;
+        
+        document.getElementById('export-button').disabled = !hasVisits;
     }
 
     function addVisit() {
         const errorDiv = document.getElementById('error-message');
-        errorDiv.textContent = ''; // Clear previous errors
+        errorDiv.textContent = '';
 
-        // Get and validate inputs
         const firstName = document.getElementById('firstName').value.trim();
         const lastName = document.getElementById('lastName').value.trim();
         const visitDateStr = document.getElementById('visitDate').value;
         const lmpDateStr = document.getElementById('lmpDate').value;
 
         if (!firstName || !lastName) {
-            errorDiv.textContent = 'Please enter both first and last name.';
-            return;
+            errorDiv.textContent = 'Please enter both first and last name.'; return;
         }
         if (!visitDateStr || !lmpDateStr) {
-            errorDiv.textContent = 'Please select both visit and LMP dates.';
-            return;
+            errorDiv.textContent = 'Please select both visit and LMP dates.'; return;
         }
 
         const visitDate = new Date(visitDateStr + 'T00:00:00');
         const lmpDate = new Date(lmpDateStr + 'T00:00:00');
 
         if (lmpDate.getTime() > visitDate.getTime()) {
-            errorDiv.textContent = 'LMP date cannot be after the visit date.';
-            return;
+            errorDiv.textContent = 'LMP date cannot be after the visit date.'; return;
         }
 
-        // Calculate Age of Gestation
         const diffTime = visitDate.getTime() - lmpDate.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         const weeks = Math.floor(diffDays / 7);
         const days = diffDays % 7;
         const ageOfGestation = `${weeks} ${days}/7`;
 
-        // Update patient data object
         patientData.firstName = firstName;
         patientData.lastName = lastName;
         patientData.visits.push({
@@ -354,7 +320,6 @@
             ageOfGestation: ageOfGestation
         });
         
-        // Sort visits by date just in case
         patientData.visits.sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate));
 
         saveDataToLocalStorage();
@@ -373,7 +338,7 @@
     }
     
     function clearData() {
-        if (confirm('Are you sure you want to clear all data for this patient? This cannot be undone.')) {
+        if (confirm('Are you sure you want to clear all data and start a new patient record?')) {
             patientData = { firstName: '', lastName: '', visits: [] };
             localStorage.removeItem('gestationTrackerData');
             updateUI();
@@ -387,51 +352,32 @@
             return;
         }
         
-        const dataStr = JSON.stringify(patientData, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(dataBlob);
+        // Prepare data for Excel sheet
+        const headers = ["First Name", "Last Name", "LMP Date"];
+        const dataRow = [patientData.firstName, patientData.lastName, patientData.visits[0].lmpDate];
         
-        const link = document.createElement('a');
-        link.href = url;
-        const fileName = `${patientData.lastName}_${patientData.firstName}_record.json`;
-        link.download = fileName;
+        patientData.visits.forEach((visit, index) => {
+            headers.push(`Visit ${index + 1} Date`, `Visit ${index + 1} AOG`);
+            dataRow.push(visit.visitDate, visit.ageOfGestation);
+        });
+
+        const worksheetData = [headers, dataRow];
         
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        // Create worksheet and workbook
+        const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Patient Record");
+
+        // Auto-fit columns
+        const cols = Object.keys(worksheetData[0]).map(key => ({
+            wch: worksheetData[0][key].length + 5 // Add padding
+        }));
+        ws['!cols'] = cols;
+        
+        // Trigger download
+        const fileName = `${patientData.lastName}_${patientData.firstName}_record.xlsx`;
+        XLSX.writeFile(wb, fileName);
     }
-
-    function importData(event) {
-        const file = event.target.files[0];
-        if (!file) {
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const importedObj = JSON.parse(e.target.result);
-                // Basic validation
-                if (importedObj && 'firstName' in importedObj && 'lastName' in importedObj && Array.isArray(importedObj.visits)) {
-                    if (confirm('Importing this file will overwrite current data. Continue?')) {
-                        patientData = importedObj;
-                        saveDataToLocalStorage();
-                        updateUI();
-                    }
-                } else {
-                    throw new Error('Invalid file format.');
-                }
-            } catch (error) {
-                alert('Error: Could not import file. Please ensure it is a valid record file created by this tool.');
-            } finally {
-                // Reset file input to allow re-importing the same file
-                document.getElementById('file-importer').value = '';
-            }
-        };
-        reader.readAsText(file);
-    }
-
 </script>
 </body>
 </html>
