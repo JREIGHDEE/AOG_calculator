@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clinical Gestational Age Tracker with Excel Export</title>
-    <!-- SheetJS library for Excel export -->
+    <title>Clinical Gestational Age Tracker with Excel I/O</title>
+    <!-- SheetJS library for Excel export/import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -13,6 +13,8 @@
             --secondary-color: #6c757d;
             --success-color: #198754;
             --danger-color: #dc3545;
+            --info-color: #0dcaf0;
+            --info-hover-color: #0aa5c2;
             --background-color: #f4f7fa;
             --card-bg-color: #ffffff;
             --border-color: #dee2e6;
@@ -139,6 +141,9 @@
         .button.success { background-color: var(--success-color); }
         .button.success:hover { background-color: #157347; }
         
+        .button.info { background-color: var(--info-color); }
+        .button.info:hover { background-color: var(--info-hover-color); }
+
         .button.danger { background-color: var(--danger-color); }
         .button.danger:hover { background-color: #bb2d3b; }
 
@@ -208,8 +213,10 @@
              <div id="error-message"></div>
 
             <div class="button-group">
+                <button class="button info" onclick="document.getElementById('file-importer').click()">Import from Excel</button>
+                <input type="file" id="file-importer" style="display:none;" accept=".xlsx, .xls" onchange="importData(event)">
                 <button class="button success" id="export-button" onclick="exportData()">Export to Excel</button>
-                <button class="button danger" onclick="clearData()">New Patient / Clear All</button>
+                <button class="button danger" onclick="clearData()" style="grid-column: 1 / -1;">New Patient / Clear All</button>
             </div>
         </div>
     </div>
@@ -233,33 +240,22 @@
         visits: []
     };
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', () => {
         loadDataFromLocalStorage();
         updateUI();
     });
 
     function updateUI() {
         const hasVisits = patientData.visits.length > 0;
+        const { firstName, lastName } = document.getElementById('firstName').value = patientData.firstName;
+        document.getElementById('lastName').value = patientData.lastName;
         
-        const firstNameInput = document.getElementById('firstName');
-        const lastNameInput = document.getElementById('lastName');
-        const lmpDateInput = document.getElementById('lmpDate');
+        document.getElementById('firstName').readOnly = hasVisits;
+        document.getElementById('lastName').readOnly = hasVisits;
+        document.getElementById('lmpDate').readOnly = hasVisits;
         
-        firstNameInput.value = patientData.firstName;
-        lastNameInput.value = patientData.lastName;
-
-        // Lock name and LMP fields if a record is active
-        firstNameInput.readOnly = hasVisits;
-        lastNameInput.readOnly = hasVisits;
-        lmpDateInput.readOnly = hasVisits;
-
         document.getElementById('visitDate').valueAsDate = new Date();
-        
-        if (hasVisits) {
-            lmpDateInput.value = patientData.visits[0].lmpDate;
-        } else {
-            lmpDateInput.value = '';
-        }
+        document.getElementById('lmpDate').value = hasVisits ? patientData.visits[0].lmpDate : '';
 
         const summaryList = document.getElementById('summary-list');
         summaryList.innerHTML = '';
@@ -268,15 +264,8 @@
             const visit = patientData.visits[i];
             const li = document.createElement('li');
             li.className = 'summary-item';
-            
-            let valueHTML = visit ? `
-                <span class="date">${visit.visitDate}</span><br>
-                <span class="gestation">${visit.ageOfGestation}</span>` : 'N/A';
-
-            li.innerHTML = `
-                <span class="summary-item-label">${i + 1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'} Visit</span>
-                <span class="summary-item-value">${valueHTML}</span>
-            `;
+            const valueHTML = visit ? `<span class="date">${visit.visitDate}</span><br><span class="gestation">${visit.ageOfGestation}</span>` : 'N/A';
+            li.innerHTML = `<span class="summary-item-label">${i + 1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'} Visit</span><span class="summary-item-value">${valueHTML}</span>`;
             summaryList.appendChild(li);
         }
         
@@ -292,11 +281,8 @@
         const visitDateStr = document.getElementById('visitDate').value;
         const lmpDateStr = document.getElementById('lmpDate').value;
 
-        if (!firstName || !lastName) {
-            errorDiv.textContent = 'Please enter both first and last name.'; return;
-        }
-        if (!visitDateStr || !lmpDateStr) {
-            errorDiv.textContent = 'Please select both visit and LMP dates.'; return;
+        if (!firstName || !lastName || !visitDateStr || !lmpDateStr) {
+            errorDiv.textContent = 'Please fill out all patient and visit fields.'; return;
         }
 
         const visitDate = new Date(visitDateStr + 'T00:00:00');
@@ -314,12 +300,7 @@
 
         patientData.firstName = firstName;
         patientData.lastName = lastName;
-        patientData.visits.push({
-            visitDate: visitDateStr,
-            lmpDate: lmpDateStr,
-            ageOfGestation: ageOfGestation
-        });
-        
+        patientData.visits.push({ visitDate: visitDateStr, lmpDate: lmpDateStr, ageOfGestation: ageOfGestation });
         patientData.visits.sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate));
 
         saveDataToLocalStorage();
@@ -332,9 +313,7 @@
 
     function loadDataFromLocalStorage() {
         const savedData = localStorage.getItem('gestationTrackerData');
-        if (savedData) {
-            patientData = JSON.parse(savedData);
-        }
+        if (savedData) patientData = JSON.parse(savedData);
     }
     
     function clearData() {
@@ -347,12 +326,8 @@
     }
 
     function exportData() {
-        if (patientData.visits.length === 0) {
-            alert('No data to export.');
-            return;
-        }
+        if (patientData.visits.length === 0) return;
         
-        // Prepare data for Excel sheet
         const headers = ["First Name", "Last Name", "LMP Date"];
         const dataRow = [patientData.firstName, patientData.lastName, patientData.visits[0].lmpDate];
         
@@ -361,23 +336,64 @@
             dataRow.push(visit.visitDate, visit.ageOfGestation);
         });
 
-        const worksheetData = [headers, dataRow];
-        
-        // Create worksheet and workbook
-        const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+        const ws = XLSX.utils.aoa_to_sheet([headers, dataRow]);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Patient Record");
+        ws['!cols'] = headers.map(h => ({ wch: h.length + 5 }));
+        XLSX.writeFile(wb, `${patientData.lastName}_${patientData.firstName}_record.xlsx`);
+    }
 
-        // Auto-fit columns
-        const cols = Object.keys(worksheetData[0]).map(key => ({
-            wch: worksheetData[0][key].length + 5 // Add padding
-        }));
-        ws['!cols'] = cols;
-        
-        // Trigger download
-        const fileName = `${patientData.lastName}_${patientData.firstName}_record.xlsx`;
-        XLSX.writeFile(wb, fileName);
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const workbook = XLSX.read(e.target.result, { type: 'binary', cellDates: true });
+                const ws = workbook.Sheets[workbook.SheetNames[0]];
+                const [headers, dataRow] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+                if (!dataRow || dataRow.length < 3) throw new Error("Invalid or empty data row.");
+                
+                const importedPatientData = {
+                    firstName: dataRow[0],
+                    lastName: dataRow[1],
+                    visits: []
+                };
+
+                const lmpDate = new Date(dataRow[2]);
+                // Adjust for timezone offset and format to YYYY-MM-DD
+                lmpDate.setMinutes(lmpDate.getMinutes() + lmpDate.getTimezoneOffset());
+                const lmpDateStr = lmpDate.toISOString().split('T')[0];
+
+                for (let i = 3; i < dataRow.length; i += 2) {
+                    if(dataRow[i] && dataRow[i+1]) {
+                        const visitDate = new Date(dataRow[i]);
+                        visitDate.setMinutes(visitDate.getMinutes() + visitDate.getTimezoneOffset());
+                        const visitDateStr = visitDate.toISOString().split('T')[0];
+                        importedPatientData.visits.push({
+                            visitDate: visitDateStr,
+                            lmpDate: lmpDateStr,
+                            ageOfGestation: dataRow[i+1]
+                        });
+                    }
+                }
+
+                if (confirm('Importing this file will overwrite current data. Continue?')) {
+                    patientData = importedPatientData;
+                    saveDataToLocalStorage();
+                    updateUI();
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error: Could not import file. Please ensure it is a valid record file created by this tool.');
+            } finally {
+                document.getElementById('file-importer').value = '';
+            }
+        };
+        reader.readAsBinaryString(file);
     }
 </script>
 </body>
-</html>
+</html>```
